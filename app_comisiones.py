@@ -43,8 +43,7 @@ if uploaded_file:
 
     df_deduplicado = grouped.apply(resolver_grupo).reset_index(drop=True)
 
-    
-def calcular_comision(row):
+    def calcular_comision(row):
     tipo_operacion = str(row.get('Tipo de Operación', '')).lower()
     oficina_captador = row.get('OFICINA CAPTADOR')
     oficina_colocador = row.get('OFICINA COLOCADOR')
@@ -55,7 +54,7 @@ def calcular_comision(row):
 
     comisiones = {}
 
-    # Caso especial: BUSINESS&RESIDENCES con el precio más alto
+    # CASO ESPECIAL: BUSINESS&RESIDENCES con el cierre más alto = 3%
     if (
         oficina_captador == 'BUSINESS&RESIDENCES'
         and precio_cierre == df['Precio Cierre'].max()
@@ -83,36 +82,6 @@ def calcular_comision(row):
             comisiones[oficina_colocador] = round(precio_cierre * porcentaje, 2)
 
     return comisiones
-
-        tipo_operacion = str(row.get('Tipo de Operación', '')).lower()
-        oficina_captador = row.get('OFICINA CAPTADOR')
-        oficina_colocador = row.get('OFICINA COLOCADOR')
-        precio_cierre = row.get('Precio Cierre', 0)
-
-        if pd.isna(precio_cierre) or precio_cierre == 0:
-            return {}
-
-        comisiones = {}
-        if oficina_captador == oficina_colocador:
-            oficina = oficina_captador
-            if tipo_operacion == 'venta':
-                comisiones[oficina] = round(precio_cierre * 0.04, 2)
-            elif tipo_operacion == 'alquiler':
-                comisiones[oficina] = round(precio_cierre * 1.0, 2)
-        else:
-            if tipo_operacion == 'venta':
-                porcentaje = 0.02
-            elif tipo_operacion == 'alquiler':
-                porcentaje = 0.5
-            else:
-                return {}
-
-            if pd.notna(oficina_captador):
-                comisiones[oficina_captador] = round(precio_cierre * porcentaje, 2)
-            if pd.notna(oficina_colocador):
-                comisiones[oficina_colocador] = round(precio_cierre * porcentaje, 2)
-
-        return comisiones
 
     df_deduplicado['Comisiones'] = df_deduplicado.apply(calcular_comision, axis=1)
 
