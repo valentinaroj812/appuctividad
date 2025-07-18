@@ -7,10 +7,30 @@ st.title("Análisis de Comisiones - Junio 2025")
 
 uploaded_file = st.file_uploader("Sube el archivo Excel con los cierres", type=["xlsx"])
 
+
 if uploaded_file:
+    st.markdown("## 🔍 Filtros")
+
+    raw_df = pd.read_excel(uploaded_file)
+    raw_df['Fecha Cierre'] = pd.to_datetime(raw_df['Fecha Cierre'], errors='coerce')
+    raw_df = raw_df[raw_df['Fecha Cierre'].dt.month == 6]
+
+    oficina_options = sorted(list(set(raw_df['OFICINA CAPTADOR'].dropna().unique()) | set(raw_df['OFICINA COLOCADOR'].dropna().unique())))
+    oficina_filtro = st.selectbox("Filtrar por Oficina", options=["Todas"] + oficina_options)
+
+    tipo_filtro = st.selectbox("Filtrar por Tipo de Operación", ["Todas", "venta", "alquiler"])
+
+    df = raw_df.copy()
+
     df = pd.read_excel(uploaded_file)
     df['Fecha Cierre'] = pd.to_datetime(df['Fecha Cierre'], errors='coerce')
-    df = df[df['Fecha Cierre'].dt.month == 6]
+    
+    if oficina_filtro != "Todas":
+        df = df[(df['OFICINA CAPTADOR'] == oficina_filtro) | (df['OFICINA COLOCADOR'] == oficina_filtro)]
+
+    if tipo_filtro != "Todas":
+        df = df[df['Tipo de Operación'].str.lower() == tipo_filtro]
+
 
     df['Dirección'] = df['Dirección'].str.strip().str.lower()
     df['Precio Cierre'] = pd.to_numeric(df['Precio Cierre'], errors='coerce')
