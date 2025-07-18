@@ -7,7 +7,6 @@ st.title("Análisis de Comisiones - Junio 2025")
 
 uploaded_file = st.file_uploader("Sube el archivo Excel con los cierres", type=["xlsx"])
 
-
 if uploaded_file:
     st.markdown("## 🔍 Filtros")
 
@@ -21,16 +20,11 @@ if uploaded_file:
     tipo_filtro = st.selectbox("Filtrar por Tipo de Operación", ["Todas", "venta", "alquiler"])
 
     df = raw_df.copy()
-
-    df = pd.read_excel(uploaded_file)
-    df['Fecha Cierre'] = pd.to_datetime(df['Fecha Cierre'], errors='coerce')
-    
     if oficina_filtro != "Todas":
         df = df[(df['OFICINA CAPTADOR'] == oficina_filtro) | (df['OFICINA COLOCADOR'] == oficina_filtro)]
 
     if tipo_filtro != "Todas":
         df = df[df['Tipo de Operación'].str.lower() == tipo_filtro]
-
 
     df['Dirección'] = df['Dirección'].str.strip().str.lower()
     df['Precio Cierre'] = pd.to_numeric(df['Precio Cierre'], errors='coerce')
@@ -109,22 +103,20 @@ if uploaded_file:
     ventas = comisiones_expandidas[comisiones_expandidas['Tipo de Operación'].str.lower() == 'venta']
     alquileres = comisiones_expandidas[comisiones_expandidas['Tipo de Operación'].str.lower() == 'alquiler']
 
-    
-st.subheader("Resumen de Comisiones")
+    st.subheader("Resumen de Comisiones")
 
-# Mostrar totales por oficina
-st.markdown("### Totales por Oficina (Ventas)")
-totales_ventas = ventas.groupby("Oficina", dropna=False)['Comisión'].sum().reset_index().sort_values(by='Comisión', ascending=False)
-st.dataframe(totales_ventas)
+    st.markdown("### Totales por Oficina (Ventas)")
+    totales_ventas = ventas.groupby("Oficina", dropna=False)['Comisión'].sum().reset_index().sort_values(by='Comisión', ascending=False)
+    st.dataframe(totales_ventas)
 
-st.markdown("### Totales por Oficina (Alquileres)")
-totales_alquileres = alquileres.groupby("Oficina", dropna=False)['Comisión'].sum().reset_index().sort_values(by='Comisión', ascending=False)
-st.dataframe(totales_alquileres)
+    st.markdown("### Totales por Oficina (Alquileres)")
+    totales_alquileres = alquileres.groupby("Oficina", dropna=False)['Comisión'].sum().reset_index().sort_values(by='Comisión', ascending=False)
+    st.dataframe(totales_alquileres)
 
-    st.write("👔 Ventas")
+    st.markdown("### Detalle de Ventas")
     st.dataframe(ventas)
 
-    st.write("🏠 Alquileres")
+    st.markdown("### Detalle de Alquileres")
     st.dataframe(alquileres)
 
     def to_excel(v_df, a_df):
