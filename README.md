@@ -1,66 +1,23 @@
 
 # 📊 App de Análisis de Comisiones - Junio 2025
 
-Esta aplicación en Streamlit permite analizar los cierres inmobiliarios del mes de junio 2025 y calcular las comisiones correspondientes por oficina, según el tipo de operación (venta o alquiler) y si fue compartida o no.
+Esta aplicación permite subir un archivo Excel con cierres de propiedades y calcula automáticamente las comisiones por oficina, identificando si la operación fue compartida o no, y diferenciando entre ventas y alquileres.
 
----
+## 📁 Archivos
 
-## 🧩 Estructura del Proyecto
+- `app_comisiones.py`: Código principal de la aplicación Streamlit.
+- `requirements.txt`: Dependencias necesarias.
+- `README.md`: Instrucciones de uso.
 
+## 🚀 Cómo usar
+
+### Opción 1: Local
+```bash
+pip install -r requirements.txt
+streamlit run app_comisiones.py
 ```
-📁 tu-repositorio
-├── app_comisiones.py        # Código principal de la aplicación
-├── requirements.txt         # Dependencias necesarias para ejecutarla
-```
 
----
-
-## 🚀 ¿Cómo usar la app?
-
-### Opción 1: Ejecutar localmente
-
-1. Clona este repositorio:
-   ```bash
-   git clone https://github.com/tu_usuario/tu_repositorio.git
-   cd tu_repositorio
-   ```
-
-2. Instala las dependencias:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. Ejecuta la app:
-   ```bash
-   streamlit run app_comisiones.py
-   ```
-
----
-
-### Opción 2: Subir a [Streamlit Cloud](https://streamlit.io/cloud)
-
-1. Crea un repositorio en GitHub con estos archivos:
-   - `app_comisiones.py`
-   - `requirements.txt`
-
-2. Entra a [Streamlit Cloud](https://streamlit.io/cloud) y crea una nueva app.
-
-3. Selecciona el repositorio y configura:
-   - **Main file**: `app_comisiones.py`
-
-4. Haz clic en **Deploy** y ¡listo!
-
----
-
-## 📄 Reglas de Comisión Aplicadas
-
-- **Venta no compartida**: 4% para la oficina (si captador = colocador)
-- **Venta compartida**: 2% para cada oficina
-- **Alquiler no compartido**: 100% para la oficina
-- **Alquiler compartido**: 50% para cada oficina
-
----
-
-## 🧠 Autor
-
-Desarrollado con 💡 por inteligencia artificial para Century 21.
+### Opción 2: Streamlit Cloud
+1. Sube estos archivos a tu repositorio.
+2. En Streamlit Cloud, selecciona como archivo principal: `app_comisiones.py`
+3. ¡Listo!

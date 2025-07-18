@@ -5,7 +5,6 @@ from io import BytesIO
 
 st.title("Análisis de Comisiones - Junio 2025")
 
-# Cargar archivo Excel
 uploaded_file = st.file_uploader("Sube el archivo Excel con los cierres", type=["xlsx"])
 
 if uploaded_file:
@@ -13,9 +12,25 @@ if uploaded_file:
     df['Fecha Cierre'] = pd.to_datetime(df['Fecha Cierre'], errors='coerce')
     df = df[df['Fecha Cierre'].dt.month == 6]
 
-    # Calcular comisiones por fila
+    df['Dirección'] = df['Dirección'].str.strip().str.lower()
+    df['Precio Cierre'] = pd.to_numeric(df['Precio Cierre'], errors='coerce')
+
+    grouped = df.groupby(['Dirección', 'Precio Cierre'])
+
+    def resolver_grupo(grupo):
+        if grupo.shape[0] == 1:
+            return grupo.iloc[0]
+        fila = grupo.iloc[0].copy()
+        captadores = grupo['OFICINA CAPTADOR'].dropna().unique()
+        colocadores = grupo['OFICINA COLOCADOR'].dropna().unique()
+        fila['OFICINA CAPTADOR'] = captadores[0] if len(captadores) > 0 else None
+        fila['OFICINA COLOCADOR'] = colocadores[0] if len(colocadores) > 0 else None
+        return fila
+
+    df_deduplicado = grouped.apply(resolver_grupo).reset_index(drop=True)
+
     def calcular_comision(row):
-        tipo_operacion = row.get('Tipo de Operación', '').lower()
+        tipo_operacion = str(row.get('Tipo de Operación', '')).lower()
         oficina_captador = row.get('OFICINA CAPTADOR')
         oficina_colocador = row.get('OFICINA COLOCADOR')
         precio_cierre = row.get('Precio Cierre', 0)
@@ -45,39 +60,48 @@ if uploaded_file:
 
         return comisiones
 
-    df['Comisiones'] = df.apply(calcular_comision, axis=1)
+    df_deduplicado['Comisiones'] = df_deduplicado.apply(calcular_comision, axis=1)
 
-    # Expandir comisiones a filas
     def descomponer_comisiones(row):
         comisiones = row['Comisiones']
+        tipo = row['Tipo de Operación']
         if not comisiones:
             return pd.DataFrame([{
                 'ID': row['ID'],
+                'Tipo de Operación': tipo,
                 'Fecha Cierre': row['Fecha Cierre'],
                 'Oficina': None,
                 'Comisión': 0.0
             }])
         return pd.DataFrame([{
             'ID': row['ID'],
+            'Tipo de Operación': tipo,
             'Fecha Cierre': row['Fecha Cierre'],
             'Oficina': oficina,
             'Comisión': monto
         } for oficina, monto in comisiones.items()])
 
     comisiones_expandidas = pd.concat(
-        [descomponer_comisiones(row) for _, row in df.iterrows()],
+        [descomponer_comisiones(row) for _, row in df_deduplicado.iterrows()],
         ignore_index=True
     )
 
-    st.subheader("Comisiones por Oficina")
-    st.dataframe(comisiones_expandidas)
+    ventas = comisiones_expandidas[comisiones_expandidas['Tipo de Operación'].str.lower() == 'venta']
+    alquileres = comisiones_expandidas[comisiones_expandidas['Tipo de Operación'].str.lower() == 'alquiler']
 
-    # Descargar como Excel
-    def to_excel(dataframe):
+    st.subheader("Resumen de Comisiones")
+    st.write("👔 Ventas")
+    st.dataframe(ventas)
+
+    st.write("🏠 Alquileres")
+    st.dataframe(alquileres)
+
+    def to_excel(v_df, a_df):
         output = BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            dataframe.to_excel(writer, index=False, sheet_name='Comisiones')
+            v_df.to_excel(writer, index=False, sheet_name='Ventas')
+            a_df.to_excel(writer, index=False, sheet_name='Alquileres')
         return output.getvalue()
 
-    excel_data = to_excel(comisiones_expandidas)
+    excel_data = to_excel(ventas, alquileres)
     st.download_button("📥 Descargar Excel", data=excel_data, file_name="comisiones_junio_2025.xlsx")
