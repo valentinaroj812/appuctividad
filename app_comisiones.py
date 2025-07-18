@@ -89,7 +89,18 @@ if uploaded_file:
     ventas = comisiones_expandidas[comisiones_expandidas['Tipo de Operación'].str.lower() == 'venta']
     alquileres = comisiones_expandidas[comisiones_expandidas['Tipo de Operación'].str.lower() == 'alquiler']
 
-    st.subheader("Resumen de Comisiones")
+    
+st.subheader("Resumen de Comisiones")
+
+# Mostrar totales por oficina
+st.markdown("### Totales por Oficina (Ventas)")
+totales_ventas = ventas.groupby("Oficina", dropna=False)['Comisión'].sum().reset_index().sort_values(by='Comisión', ascending=False)
+st.dataframe(totales_ventas)
+
+st.markdown("### Totales por Oficina (Alquileres)")
+totales_alquileres = alquileres.groupby("Oficina", dropna=False)['Comisión'].sum().reset_index().sort_values(by='Comisión', ascending=False)
+st.dataframe(totales_alquileres)
+
     st.write("👔 Ventas")
     st.dataframe(ventas)
 
