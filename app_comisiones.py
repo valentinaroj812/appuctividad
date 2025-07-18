@@ -43,7 +43,47 @@ if uploaded_file:
 
     df_deduplicado = grouped.apply(resolver_grupo).reset_index(drop=True)
 
-    def calcular_comision(row):
+    
+def calcular_comision(row):
+    tipo_operacion = str(row.get('Tipo de Operación', '')).lower()
+    oficina_captador = row.get('OFICINA CAPTADOR')
+    oficina_colocador = row.get('OFICINA COLOCADOR')
+    precio_cierre = row.get('Precio Cierre', 0)
+
+    if pd.isna(precio_cierre) or precio_cierre == 0:
+        return {}
+
+    comisiones = {}
+
+    # Caso especial: BUSINESS&RESIDENCES con el precio más alto
+    if (
+        oficina_captador == 'BUSINESS&RESIDENCES'
+        and precio_cierre == df['Precio Cierre'].max()
+    ):
+        comisiones[oficina_captador] = round(precio_cierre * 0.03, 2)
+        return comisiones
+
+    if oficina_captador == oficina_colocador:
+        oficina = oficina_captador
+        if tipo_operacion == 'venta':
+            comisiones[oficina] = round(precio_cierre * 0.04, 2)
+        elif tipo_operacion == 'alquiler':
+            comisiones[oficina] = round(precio_cierre * 1.0, 2)
+    else:
+        if tipo_operacion == 'venta':
+            porcentaje = 0.02
+        elif tipo_operacion == 'alquiler':
+            porcentaje = 0.5
+        else:
+            return {}
+
+        if pd.notna(oficina_captador):
+            comisiones[oficina_captador] = round(precio_cierre * porcentaje, 2)
+        if pd.notna(oficina_colocador):
+            comisiones[oficina_colocador] = round(precio_cierre * porcentaje, 2)
+
+    return comisiones
+
         tipo_operacion = str(row.get('Tipo de Operación', '')).lower()
         oficina_captador = row.get('OFICINA CAPTADOR')
         oficina_colocador = row.get('OFICINA COLOCADOR')
@@ -53,15 +93,7 @@ if uploaded_file:
             return {}
 
         comisiones = {}
-        
-    # Caso especial: comisión 3% para cierre de Business&Residences con el monto más alto
-    if row['OFICINA CAPTADOR'] == 'BUSINESS&RESIDENCES' and row['Precio Cierre'] == df['Precio Cierre'].max():
-        oficina = row['OFICINA CAPTADOR']
-        comisiones[oficina] = round(precio_cierre * 0.03, 2)
-        return comisiones
-
-    if oficina_captador == oficina_colocador:
-
+        if oficina_captador == oficina_colocador:
             oficina = oficina_captador
             if tipo_operacion == 'venta':
                 comisiones[oficina] = round(precio_cierre * 0.04, 2)
