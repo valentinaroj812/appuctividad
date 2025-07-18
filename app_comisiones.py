@@ -32,47 +32,18 @@ if uploaded_file:
     grouped = df.groupby(['Dirección', 'Precio Cierre'])
 
     def resolver_grupo(grupo):
+        if grupo.shape[0] == 1:
+            return grupo.iloc[0]
         fila = grupo.iloc[0].copy()
-        oficinas_captador = grupo['OFICINA CAPTADOR'].dropna().unique().tolist()
-        oficinas_colocador = grupo['OFICINA COLOCADOR'].dropna().unique().tolist()
-        fila['OFICINAS_INVOLUCRADAS'] = list(set(oficinas_captador + oficinas_colocador))
+        captadores = grupo['OFICINA CAPTADOR'].dropna().unique()
+        colocadores = grupo['OFICINA COLOCADOR'].dropna().unique()
+        fila['OFICINA CAPTADOR'] = captadores[0] if len(captadores) > 0 else None
+        fila['OFICINA COLOCADOR'] = colocadores[0] if len(colocadores) > 0 else None
         return fila
 
     df_deduplicado = grouped.apply(resolver_grupo).reset_index(drop=True)
 
-    
     def calcular_comision(row):
-        tipo_operacion = str(row.get('Tipo de Operación', '')).lower()
-        oficinas = row.get('OFICINAS_INVOLUCRADAS', [])
-        precio_cierre = row.get('Precio Cierre', 0)
-
-        if not isinstance(oficinas, list) or len(oficinas) == 0 or pd.isna(precio_cierre) or precio_cierre == 0:
-            return {}
-
-        comisiones = {}
-
-        # CASO ESPECIAL: BUSINESS&RESIDENCES con el precio más alto = 3%
-        if (
-            'BUSINESS&RESIDENCES' in oficinas
-            and precio_cierre == df['Precio Cierre'].max()
-        ):
-            comisiones['BUSINESS&RESIDENCES'] = round(precio_cierre * 0.03, 2)
-            return comisiones
-
-        # COMISIÓN COMPARTIDA ENTRE TODAS LAS OFICINAS INVOLUCRADAS
-        if tipo_operacion == 'venta':
-            total_comision = precio_cierre * 0.02
-        elif tipo_operacion == 'alquiler':
-            total_comision = precio_cierre * 0.5
-        else:
-            return {}
-
-        split = round(total_comision / len(oficinas), 2)
-        for oficina in oficinas:
-            comisiones[oficina] = split
-
-        return comisiones
-
         tipo_operacion = str(row.get('Tipo de Operación', '')).lower()
         oficina_captador = row.get('OFICINA CAPTADOR')
         oficina_colocador = row.get('OFICINA COLOCADOR')
