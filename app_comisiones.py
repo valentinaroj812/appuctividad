@@ -53,7 +53,15 @@ if uploaded_file:
             return {}
 
         comisiones = {}
-        if oficina_captador == oficina_colocador:
+        
+    # Caso especial: comisión 3% para cierre de Business&Residences con el monto más alto
+    if row['OFICINA CAPTADOR'] == 'BUSINESS&RESIDENCES' and row['Precio Cierre'] == df['Precio Cierre'].max():
+        oficina = row['OFICINA CAPTADOR']
+        comisiones[oficina] = round(precio_cierre * 0.03, 2)
+        return comisiones
+
+    if oficina_captador == oficina_colocador:
+
             oficina = oficina_captador
             if tipo_operacion == 'venta':
                 comisiones[oficina] = round(precio_cierre * 0.04, 2)
