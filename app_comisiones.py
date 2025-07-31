@@ -16,24 +16,18 @@ if uploaded_file:
 
     oficina_options = sorted(list(set(df['OFICINA CAPTADOR'].dropna().unique()) | set(df['OFICINA COLOCADOR'].dropna().unique())))
     oficina_filtro = st.selectbox("Filtrar por Oficina", options=["Todas"] + oficina_options)
-
-    
-meses = ['Todos'] + list(range(1, 13))
-mes_filtro = st.selectbox("Filtrar por Mes", meses)
-
-tipo_filtro = st.selectbox("Filtrar por Tipo de Operación", ["Todas", "venta", "alquiler"])
-
+    tipo_filtro = st.selectbox("Filtrar por Tipo de Operación", ["Todas", "venta", "alquiler"])
+    meses = ['Todos'] + list(range(1, 13))
+    mes_filtro = st.selectbox("Filtrar por Mes", meses)
 
     if oficina_filtro != "Todas":
         df = df[(df['OFICINA CAPTADOR'] == oficina_filtro) | (df['OFICINA COLOCADOR'] == oficina_filtro)]
 
-    
+    if tipo_filtro != "Todas":
+        df = df[df['Tipo de Operación'].str.lower() == tipo_filtro]
+
     if mes_filtro != "Todos":
         df = df[df['Fecha Cierre'].dt.month == mes_filtro]
-
-    if tipo_filtro != "Todas":
-
-        df = df[df['Tipo de Operación'].str.lower() == tipo_filtro]
 
     df['Dirección'] = df['Dirección'].str.strip().str.lower()
     df['Precio Cierre'] = pd.to_numeric(df['Precio Cierre'], errors='coerce')
