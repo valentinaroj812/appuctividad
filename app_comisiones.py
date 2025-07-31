@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 
-st.title("Análisis de Comisiones - Junio 2025")
+st.title("Análisis de Comisiones - Año 2025")
 
 uploaded_file = st.file_uploader("Sube el archivo Excel con los cierres", type=["xlsx"])
 
@@ -12,14 +12,13 @@ if uploaded_file:
 
     raw_df = pd.read_excel(uploaded_file)
     raw_df['Fecha Cierre'] = pd.to_datetime(raw_df['Fecha Cierre'], errors='coerce')
-    raw_df = raw_df[raw_df['Fecha Cierre'].dt.month == 6]
+    df = raw_df[raw_df['Fecha Cierre'].dt.year == 2025]
 
-    oficina_options = sorted(list(set(raw_df['OFICINA CAPTADOR'].dropna().unique()) | set(raw_df['OFICINA COLOCADOR'].dropna().unique())))
+    oficina_options = sorted(list(set(df['OFICINA CAPTADOR'].dropna().unique()) | set(df['OFICINA COLOCADOR'].dropna().unique())))
     oficina_filtro = st.selectbox("Filtrar por Oficina", options=["Todas"] + oficina_options)
 
     tipo_filtro = st.selectbox("Filtrar por Tipo de Operación", ["Todas", "venta", "alquiler"])
 
-    df = raw_df.copy()
     if oficina_filtro != "Todas":
         df = df[(df['OFICINA CAPTADOR'] == oficina_filtro) | (df['OFICINA COLOCADOR'] == oficina_filtro)]
 
@@ -32,54 +31,41 @@ if uploaded_file:
     grouped = df.groupby(['Dirección', 'Precio Cierre'])
 
     def resolver_grupo(grupo):
-        if grupo.shape[0] == 1:
-            return grupo.iloc[0]
         fila = grupo.iloc[0].copy()
-        captadores = grupo['OFICINA CAPTADOR'].dropna().unique()
-        colocadores = grupo['OFICINA COLOCADOR'].dropna().unique()
-        fila['OFICINA CAPTADOR'] = captadores[0] if len(captadores) > 0 else None
-        fila['OFICINA COLOCADOR'] = colocadores[0] if len(colocadores) > 0 else None
+        oficinas_captador = grupo['OFICINA CAPTADOR'].dropna().unique().tolist()
+        oficinas_colocador = grupo['OFICINA COLOCADOR'].dropna().unique().tolist()
+        fila['OFICINAS_INVOLUCRADAS'] = list(set(oficinas_captador + oficinas_colocador))
         return fila
 
     df_deduplicado = grouped.apply(resolver_grupo).reset_index(drop=True)
 
     def calcular_comision(row):
         tipo_operacion = str(row.get('Tipo de Operación', '')).lower()
-        oficina_captador = row.get('OFICINA CAPTADOR')
-        oficina_colocador = row.get('OFICINA COLOCADOR')
+        oficinas = row.get('OFICINAS_INVOLUCRADAS', [])
         precio_cierre = row.get('Precio Cierre', 0)
 
-        if pd.isna(precio_cierre) or precio_cierre == 0:
+        if not isinstance(oficinas, list) or len(oficinas) == 0 or pd.isna(precio_cierre) or precio_cierre == 0:
             return {}
 
         comisiones = {}
 
-        # CASO ESPECIAL: BUSINESS&RESIDENCES con el cierre más alto = 3%
         if (
-            oficina_captador == 'BUSINESS&RESIDENCES'
+            'BUSINESS&RESIDENCES' in oficinas
             and precio_cierre == df['Precio Cierre'].max()
         ):
-            comisiones[oficina_captador] = round(precio_cierre * 0.03, 2)
+            comisiones['BUSINESS&RESIDENCES'] = round(precio_cierre * 0.03, 2)
             return comisiones
 
-        if oficina_captador == oficina_colocador:
-            oficina = oficina_captador
-            if tipo_operacion == 'venta':
-                comisiones[oficina] = round(precio_cierre * 0.04, 2)
-            elif tipo_operacion == 'alquiler':
-                comisiones[oficina] = round(precio_cierre * 1.0, 2)
+        if tipo_operacion == 'venta':
+            total_comision = precio_cierre * 0.02
+        elif tipo_operacion == 'alquiler':
+            total_comision = precio_cierre * 0.5
         else:
-            if tipo_operacion == 'venta':
-                porcentaje = 0.02
-            elif tipo_operacion == 'alquiler':
-                porcentaje = 0.5
-            else:
-                return {}
+            return {}
 
-            if pd.notna(oficina_captador):
-                comisiones[oficina_captador] = round(precio_cierre * porcentaje, 2)
-            if pd.notna(oficina_colocador):
-                comisiones[oficina_colocador] = round(precio_cierre * porcentaje, 2)
+        split = round(total_comision / len(oficinas), 2)
+        for oficina in oficinas:
+            comisiones[oficina] = split
 
         return comisiones
 
@@ -90,14 +76,12 @@ if uploaded_file:
         tipo = row['Tipo de Operación']
         if not comisiones:
             return pd.DataFrame([{
-                'ID': row['ID'],
                 'Tipo de Operación': tipo,
                 'Fecha Cierre': row['Fecha Cierre'],
                 'Oficina': None,
                 'Comisión': 0.0
             }])
         return pd.DataFrame([{
-            'ID': row['ID'],
             'Tipo de Operación': tipo,
             'Fecha Cierre': row['Fecha Cierre'],
             'Oficina': oficina,
@@ -136,4 +120,4 @@ if uploaded_file:
         return output.getvalue()
 
     excel_data = to_excel(ventas, alquileres)
-    st.download_button("📥 Descargar Excel", data=excel_data, file_name="comisiones_junio_2025.xlsx")
+    st.download_button("📥 Descargar Excel", data=excel_data, file_name="comisiones_2025.xlsx")
